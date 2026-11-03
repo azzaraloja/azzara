@@ -1,4 +1,6 @@
-// PREENCHA com os dados do seu projeto Supabase (Project Settings > API)
-const SUPABASE_URL = "COLE_AQUI_A_PROJECT_URL";
-const SUPABASE_KEY = "COLE_AQUI_A_ANON_PUBLIC_KEY";
-const WHATSAPP = "55SEUNUMEROCOMDDD"; // ex: 5563999999999
+// Configuração da loja Azzara
+const SUPABASE_URL = "https://wtjorbvcrsylpeidtuie.supabase.co";
+
+const SUPABASE_KEY = "SUA_CHAVE_SB_PUBLISHABLE";
+
+const WHATSAPP = "5563992846751";
