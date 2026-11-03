@@ -1,0 +1,51 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Azzara · Painel</title><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body>
+<header><div class="logo">AZZARA<small>PAINEL</small></div><button class="btn o sm" onclick="sb.auth.signOut().then(()=>location.reload())">Sair</button></header>
+<div class="wrap"><nav id="nav" hidden><button data-t="dash">Resumo</button><button data-t="prod">Produtos</button><button data-t="ped">Pedidos</button><button data-t="fin">Financeiro</button></nav><div id="app"></div></div>
+<dialog id="dlg"><div id="d"></div></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY),$=s=>document.querySelector(s);
+const e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const R=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const SZ=['33','34','35','36','37','38','39','40'],ST=['novo','pago','enviado','entregue','cancelado'];let PR=[];
+const app=h=>$('#app').innerHTML=h,close=()=>$('#dlg').close();
+async function init(){const{data:{session}}=await sb.auth.getSession();
+if(!session)return app(`<div class=panel style="max-width:380px;margin:2rem auto"><h2>Entrar</h2><label>E-mail</label><input id=le type=email><label>Senha</label><input id=lp type=password><button class="btn r" onclick="login()">Entrar</button></div>`);
+const{data}=await sb.from('admins').select('user_id');if(!data?.length){await sb.auth.signOut();return app('<p class=panel>Esta conta não tem acesso de administrador.</p>')}
+$('#nav').hidden=false;$('#nav').onclick=ev=>ev.target.dataset.t&&go(ev.target.dataset.t);go('dash')}
+async function login(){const{error}=await sb.auth.signInWithPassword({email:$('#le').value,password:$('#lp').value});error?alert(error.message):init()}
+function go(t){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));({dash,prod,ped,fin})[t]()}
+async function dash(){const[o,t,v]=await Promise.all([sb.from('orders').select('status'),sb.from('transactions').select('*'),sb.from('variants').select('stock')]);
+const T=t.data||[],sum=(ty,m)=>T.filter(x=>x.type==ty&&x.date.startsWith(m)).reduce((a,x)=>a+ +x.amount,0);
+const m=new Date().toISOString().slice(0,7),ms=[...Array(6)].map((_,i)=>{const d=new Date();d.setMonth(d.getMonth()-5+i);return d.toISOString().slice(0,7)});
+const mx=Math.max(1,...ms.flatMap(x=>[sum('entrada',x),sum('saida',x)]));
+app(`<div class=kpis><div class=kpi><span>Entradas do mês</span><b class=pos>${R(sum('entrada',m))}</b></div><div class=kpi><span>Saídas do mês</span><b class=neg>${R(sum('saida',m))}</b></div><div class=kpi><span>Lucro do mês</span><b>${R(sum('entrada',m)-sum('saida',m))}</b></div><div class=kpi><span>Pedidos novos</span><b>${(o.data||[]).filter(x=>x.status=='novo').length}</b></div><div class=kpi><span>Tamanhos com estoque ≤ 1</span><b>${(v.data||[]).filter(x=>x.stock<=1).length}</b></div></div>
+<div class=panel><h3>Últimos 6 meses <small class=m>(rosa = entradas, dourado = saídas)</small></h3><div class=bars>${ms.map(x=>`<div><i style="height:${sum('entrada',x)/mx*120}px"></i><i style="height:${sum('saida',x)/mx*120}px"></i><br>${x.slice(5)}/${x.slice(2,4)}</div>`).join('')}</div></div>`)}
+async function prod(){const{data}=await sb.from('products').select('*,variants(size,stock)').order('created_at',{ascending:false});PR=(data||[]).sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+app(`<button class="btn r" onclick="edit()">+ Novo produto</button><div class=panel>${PR.map((p,i)=>(i&&PR[i-1].category==p.category?'':`<h3>${e(p.category)}</h3>`)+`<div class=row onclick="edit('${p.id}')" style="cursor:pointer"><img class=th src="${e(p.image_url)}"><span style="flex:1">${e(p.name)}<br><small class=m>${R(p.price)} · estoque ${p.variants.reduce((a,v)=>a+v.stock,0)} ${p.active?'':'· oculto'}</small></span></div>`).join('')||'<p class=m>Nenhum produto ainda.</p>'}</div>`)}
+function edit(id){const p=PR.find(x=>x.id==id)||{active:true,variants:[]},st=s=>p.variants.find(v=>v.size==s)?.stock||0;window.cur=p;
+$('#d').innerHTML=`<h2>${id?'Editar':'Novo'} produto</h2><label>Foto</label><input id=pf type=file accept="image/*"><label>Nome</label><input id=pn value="${e(p.name)}"><label>Descrição</label><textarea id=pd rows=2>${e(p.description)}</textarea><label>Categoria</label><select id=pc>${['Saltos','Sandálias'].map(c=>`<option ${c==p.category?'selected':''}>${c}</option>`).join('')}</select><label>Preço de venda</label><input id=pp type=number step=0.01 value="${p.price||''}"><label>Custo</label><input id=pk type=number step=0.01 value="${p.cost||''}"><label>Estoque por tamanho</label><div class=sg>${SZ.map(s=>`<div><small>${s}</small><input id="z${s}" type=number min=0 value="${st(s)}"></div>`).join('')}</div><label style="display:block;margin:.8rem 0"><input type=checkbox id=pa ${p.active?'checked':''} style="width:auto"> Visível na loja</label><button class="btn r" onclick="sv('${id||''}')">Salvar</button> ${id?`<button class="btn o" onclick="rm('${id}')">Excluir</button>`:''} <button class="btn o" onclick="close()">Cancelar</button>`;$('#dlg').showModal()}
+async function sv(id){let img=cur.image_url;const f=$('#pf').files[0];
+if(f){const path=Date.now()+'-'+f.name.replace(/[^\w.]/g,'');const{error}=await sb.storage.from('produtos').upload(path,f);if(error)return alert(error.message);img=sb.storage.from('produtos').getPublicUrl(path).data.publicUrl}
+const b={name:$('#pn').value,description:$('#pd').value,category:$('#pc').value,price:+$('#pp').value,cost:+$('#pk').value||0,image_url:img,active:$('#pa').checked};
+if(!b.name||!b.price)return alert('Informe nome e preço.');
+const r=id?await sb.from('products').update(b).eq('id',id).select().single():await sb.from('products').insert(b).select().single();
+if(r.error)return alert(r.error.message);
+await sb.from('variants').upsert(SZ.map(s=>({product_id:r.data.id,size:s,stock:+$('#z'+s).value||0})),{onConflict:'product_id,size'});close();prod()}
+async function rm(id){if(confirm('Excluir este produto?')){const{error}=await sb.from('products').delete().eq('id',id);error?alert('Já há pedidos com ele. Desmarque "Visível na loja".'):(close(),prod())}}
+async function ped(){const{data}=await sb.from('orders').select('*,order_items(*)').order('created_at',{ascending:false});
+app(`<div class=panel>${(data||[]).map(o=>`<div class=row style="align-items:flex-start"><span>#${o.id.slice(0,6)} · ${new Date(o.created_at).toLocaleDateString('pt-BR')}<br><b>${e(o.customer_name)}</b> · <a href="https://wa.me/55${o.phone.replace(/\D/g,'')}">${e(o.phone)}</a><br><small class=m>${o.order_items.map(i=>e(i.name)+' '+i.size+' x'+i.qty).join(', ')}<br>${e(o.address)}</small><br>${o.proof_url?`<a href="${e(o.proof_url)}" target=_blank>📎 Ver comprovante</a>`:'<small class=m>sem comprovante</small>'}</span><span style="text-align:right"><b>${R(o.total)}</b><select onchange="stt('${o.id}',this.value)">${ST.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select></span></div>`).join('')||'<p class=m>Sem pedidos.</p>'}</div>`)}
+async function stt(id,s){const{error}=await sb.from('orders').update({status:s}).eq('id',id);error&&alert(error.message)}
+async function fin(){const{data}=await sb.from('transactions').select('*').order('date',{ascending:false}).limit(200);const T=data||[];
+const tot=ty=>T.filter(x=>x.type==ty).reduce((a,x)=>a+ +x.amount,0);
+app(`<div class=kpis><div class=kpi><span>Entradas</span><b class=pos>${R(tot('entrada'))}</b></div><div class=kpi><span>Saídas</span><b class=neg>${R(tot('saida'))}</b></div><div class=kpi><span>Saldo</span><b>${R(tot('entrada')-tot('saida'))}</b></div></div>
+<div class=panel><h3>Novo lançamento</h3><select id=ft><option value=saida>Saída (compra, frete, despesa)</option><option value=entrada>Entrada</option></select><input id=fc placeholder="Categoria (ex: Mercadoria, Frete, Anúncios)"><input id=fd placeholder="Descrição"><input id=fa type=number step=0.01 placeholder="Valor"><input id=fx type=date value="${new Date().toISOString().slice(0,10)}"><button class="btn r" onclick="addT()">Lançar</button></div>
+<div class=panel>${T.map(x=>`<div class=row><span>${x.date.split('-').reverse().join('/')} · ${e(x.category)}<br><small class=m>${e(x.description)}</small></span><span class="${x.type=='entrada'?'pos':'neg'}">${x.type=='entrada'?'+':'−'}${R(x.amount)} <button class="btn o sm" onclick="delT('${x.id}')">×</button></span></div>`).join('')||'<p class=m>Sem lançamentos.</p>'}</div>`)}
+async function addT(){const b={type:$('#ft').value,category:$('#fc').value,description:$('#fd').value,amount:+$('#fa').value,date:$('#fx').value};if(!b.amount)return alert('Informe o valor.');const{error}=await sb.from('transactions').insert(b);error?alert(error.message):fin()}
+async function delT(id){if(confirm('Apagar lançamento?')){await sb.from('transactions').delete().eq('id',id);fin()}}
+init();
+</script></body></html>
