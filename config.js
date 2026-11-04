@@ -1,5 +1,5 @@
-const SUPABASE_URL = "COLE_AQUI_A_URL_DO_SUPABASE";
-const SUPABASE_KEY = "COLE_AQUI_A_CHAVE_PUBLICA";
+const SUPABASE_URL = "https://wtjorbvcrsylpeidtuie.supabase.co";
+const SUPABASE_KEY = "sb_publishable_5MW5LSOkZnGqdcWpjYqCaw_FaZ0HeT4";
 
 const WHATSAPP = "5563992130333";
 const PIX_KEY = "+5563992130333";
