@@ -1,10 +1,37 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Azzara Collection</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css"></head><body>
+<link rel="stylesheet" href="style.css"><style>
+.cta{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin:1.2rem 0 .2rem}
+.cta .btn,.fab,.foot a{text-decoration:none}
+.cta .btn{display:inline-flex;align-items:center;gap:.45rem}
+.strip{display:flex;gap:.3rem 1.3rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;font-size:.78rem;color:var(--mut)}
+.how{max-width:1100px;margin:2.6rem auto 0;padding:0 1rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.how div{background:#fff;border-radius:10px;padding:1.1rem 1rem;text-align:center;font-size:.85rem;color:var(--mut)}
+.how b{display:grid;place-items:center;width:36px;height:36px;margin:0 auto .55rem;border-radius:50%;background:var(--pink);color:var(--rose);font:600 1.2rem 'Cormorant Garamond',serif}
+.how span{display:block;color:var(--ink);font-weight:500;margin-bottom:.15rem}
+.foot{margin-top:3rem;background:var(--pink);padding:2.4rem 1.2rem 5.5rem;text-align:center}
+.foot .logo{display:inline-block}
+.foot .tag{font:italic 500 1.25rem 'Cormorant Garamond',serif;color:var(--rose);margin:.8rem 0 1.2rem}
+.foot .ct{display:flex;flex-direction:column;gap:.45rem;align-items:center;font-size:.9rem}
+.foot .ct a{color:var(--ink)}.foot .ct a:hover{color:var(--rose)}
+.foot .sm{margin-top:1.4rem;font-size:.74rem;color:var(--mut)}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:20}
+.fab svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:600px){.how{grid-template-columns:1fr}}
+</style>
+</head><body>
 <header><div class="logo">AZZARA<small>COLLECTION</small></div><div><button class="btn o sm" onclick="acct()">Minha conta</button> <button class="btn sm" onclick="bag()">Sacola (<span id="n">0</span>)</button></div></header>
-<div class="hero"><h1>Seu estilo, sua essência</h1><p class="m">Saltos e sandálias · Araguaína-TO · Enviamos para todo o Brasil</p></div>
+<div class="hero"><h1>Seu estilo, sua essência</h1><p class="m">Estilo &amp; escolhas que combinam com você 🤍</p>
+<div class="cta"><a class="btn r" id="hwa" target="_blank" rel="noopener">💬 Chamar no WhatsApp</a><a class="btn o" id="hig" target="_blank" rel="noopener">📸 Instagram</a></div>
+<div class="strip"><span>📍 Araguaína · TO</span><span>📦 Enviamos para todo o Brasil</span><span>💳 Pagamento via Pix</span></div></div>
 <div class="wrap"><div class="tabs" id="tb"><button class="on">Todos</button><button>Saltos</button><button>Sandálias</button></div><div class="grid" id="g"></div></div>
+<section class="how"><div><b>1</b><span>Escolha seu par</span>Veja os modelos e selecione o seu tamanho</div><div><b>2</b><span>Pague com Pix</span>Finalize o pedido e pague pelo QR code</div><div><b>3</b><span>Envie o comprovante</span>Mandamos tudo pelo WhatsApp e cuidamos do envio</div></section>
+<footer class="foot"><div class="logo">AZZARA<small>COLLECTION</small></div>
+<p class="tag">Seu estilo, sua essência</p>
+<div class="ct"><a id="fwa" target="_blank" rel="noopener"></a><a id="fig" target="_blank" rel="noopener"></a><span>📍 Araguaína · TO</span><span>📦 Enviamos para todo o Brasil</span></div>
+<p class="sm">© <span id="yr"></span> Azzara Collection · Todos os direitos reservados</p></footer>
+<a class="fab" id="fab" target="_blank" rel="noopener" aria-label="Falar no WhatsApp"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></a>
 <dialog id="dlg"><div id="d"></div></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -51,5 +78,10 @@ const{data}=await sb.from('orders').select('*,order_items(*)').order('created_at
 modal(`<h2>Meus pedidos</h2>${(data||[]).map(o=>`<div class=row><span>#${o.id.slice(0,6)} · ${new Date(o.created_at).toLocaleDateString('pt-BR')}<br>${o.order_items.map(i=>e(i.name)+' '+i.size).join(', ')}</span><span><b>${R(o.total)}</b><br>${o.status}</span></div>`).join('')||'<p class=m>Nenhum pedido ainda.</p>'}<button class="btn o" onclick="sb.auth.signOut().then(()=>$('#dlg').close())">Sair</button> <button class="btn o" onclick="$('#dlg').close()">Fechar</button>`)}
 async function auth(k){const c={email:$('#le').value,password:$('#lp').value};const{error}=k=='in'?await sb.auth.signInWithPassword(c):await sb.auth.signUp(c);
 if(error)return alert(error.message);acct()}
-save();load();
+const IG='azzara.collec';
+function contact(){const d=String(WHATSAPP).replace(/^55/,''),tel=`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`,
+msg=encodeURIComponent('Olá! Vim pelo site da Azzara Collection e gostaria de ajuda. 💗'),wa=`https://wa.me/${WHATSAPP}?text=${msg}`,ig=`https://instagram.com/${IG}`;
+['hwa','fwa','fab'].forEach(i=>$('#'+i).href=wa);['hig','fig'].forEach(i=>$('#'+i).href=ig);
+$('#fwa').textContent='💬 WhatsApp '+tel;$('#fig').textContent='📸 @'+IG;$('#yr').textContent=new Date().getFullYear()}
+contact();save();load();
 </script></body></html>
