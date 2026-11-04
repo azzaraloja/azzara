@@ -32,7 +32,7 @@ modal(`<h2>Sua sacola</h2>${cart.map((i,k)=>`<div class=row><span>${e(i.name)} �
 async function fin(){const n=$('#cn').value,t=$('#ct').value,a=$('#ca').value;if(!n||!t||!a||!cart.length)return alert('Preencha seus dados.');
 const{data,error}=await sb.rpc('create_order',{p_name:n,p_phone:t,p_address:a,p_items:cart.map(i=>({product_id:i.id,size:i.size,qty:i.qty}))});
 if(error)return alert(error.message);
-PO={id:data,n,a,tot:cart.reduce((s,i)=>s+i.price*i.qty,0),items:cart.map(i=>`• ${i.name} tam ${i.size} x${i.qty}`).join('\n')};cart=[];save();pay()}
+PO={id:data,n,t,a,tot:cart.reduce((s,i)=>s+i.price*i.qty,0),items:cart.map(i=>`▪️ ${i.name}\n    Tam. ${i.size} · ${i.qty}x · ${R(i.price*i.qty)}`).join('\n\n')};cart=[];save();pay()}
 const crc=s=>{let c=0xFFFF;for(const ch of s){c^=ch.charCodeAt(0)<<8;for(let j=0;j<8;j++)c=c&0x8000?(c<<1)^0x1021:c<<1;c&=0xFFFF}return c.toString(16).toUpperCase().padStart(4,'0')};
 const f=(id,v)=>id+String(v.length).padStart(2,'0')+v;
 function pixCode(amt,tx){const p=f('00','01')+f('26',f('00','br.gov.bcb.pix')+f('01',PIX_KEY))+f('52','0000')+f('53','986')+f('54',amt.toFixed(2))+f('58','BR')+f('59',PIX_NAME.slice(0,25))+f('60','Araguaina')+f('62',f('05',tx))+'6304';return p+crc(p)}
@@ -42,7 +42,8 @@ new QRCode($('#qr'),{text:code,width:180,height:180})}
 async function proof(){const f=$('#pf').files[0];if(!f)return alert('Anexe o comprovante.');
 const path=PO.id+'-'+f.name.replace(/[^\w.]/g,'');const{error}=await sb.storage.from('comprovantes').upload(path,f);if(error)return alert(error.message);
 const url=sb.storage.from('comprovantes').getPublicUrl(path).data.publicUrl;await sb.rpc('attach_proof',{p_order:PO.id,p_url:url});wa(url)}
-function wa(url){const tx=`Olá! Fiz o pedido #${PO.id.slice(0,6)} na Azzara:\n${PO.items}\nTotal: ${R(PO.tot)}\nNome: ${PO.n}\nEndereço: ${PO.a}\n`+(url?`Comprovante Pix enviado: ${url}`:'Vou pagar via Pix em seguida.');
+function wa(url){const L='━━━━━━━━━━━━━━';
+const tx=`Olá, Azzara Collection! 💗\nAcabei de fazer um pedido pelo site.\n\n🧾 *PEDIDO #${PO.id.slice(0,6)}*\n${L}\n\n🛍️ *ITENS*\n${PO.items}\n\n💰 *TOTAL: ${R(PO.tot)}*\n${L}\n\n👤 *MEUS DADOS*\nNome: ${PO.n}\nWhatsApp: ${PO.t}\n📍 Endereço: ${PO.a}\n\n💳 *PAGAMENTO · PIX*\n`+(url?`✅ Comprovante enviado:\n${url}`:`⏳ Vou pagar agora e envio o comprovante em seguida.`)+`\n\nObrigada! 🌸`;
 location.href=`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(tx)}`}
 async function acct(){const{data:{session}}=await sb.auth.getSession();
 if(!session)return modal(`<h2>Minha conta</h2><label>E-mail</label><input id=le type=email><label>Senha (mín. 6)</label><input id=lp type=password><button class="btn r" onclick="auth('in')">Entrar</button> <button class="btn o" onclick="auth('up')">Criar conta</button>`);
